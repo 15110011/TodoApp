@@ -97,16 +97,18 @@ const InitTask: React.FC<Props> = props => {
             {task.name}
           </Animated.Text>
         </View>
-        <TouchableOpacity
-          onPress={() => handleDelete?.(task.id)}
-          style={[styles.deleteBtn]}>
-          <AppIcon
-            icon={Icons.delete}
-            size={Size.size_12}
-            color={Colors.black}
-          />
-          <Text style={{paddingLeft: Spacing.S}}>Xoá</Text>
-        </TouchableOpacity>
+        {task.isEditing ? (
+          <TouchableOpacity
+            onPress={() => handleDelete?.(task.id)}
+            style={[styles.deleteBtn]}>
+            <AppIcon
+              icon={Icons.delete}
+              size={Size.size_12}
+              color={Colors.black}
+            />
+            <Text style={{paddingLeft: Spacing.S}}>Xoá</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
       <>
         <View
