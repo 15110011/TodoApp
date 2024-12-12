@@ -31,11 +31,20 @@ const Home = () => {
   const insets = useSafeAreaInsets();
   const todoList = useSelector((state: RootState) => state.todoList);
   const dispatch = useDispatch();
+  const [selected, setSelected] = useState<ITask>(null);
 
   const data = useMemo(() => {
     let newData = [...todoList];
     return newData.sort((a: ITask, b: ITask) => b.priority - a.priority);
   }, [todoList]);
+
+  const handleSelect = useCallback(
+    (item: ITask) => {
+      setSelected(item);
+      dispatch(editTodo(item.id));
+    },
+    [dispatch],
+  );
 
   const onChangeText = useCallback(
     (text: string) => {
@@ -50,6 +59,7 @@ const Home = () => {
 
   const handleUpdate = useCallback(
     (newData: ITask) => {
+      setSelected({});
       dispatch(updateTodo(newData));
     },
     [dispatch],
@@ -61,7 +71,6 @@ const Home = () => {
         setModalVisible(false);
         return;
       }
-
       setModalVisible(false);
       dispatch(addTodo(newData));
       setTask({
@@ -72,13 +81,6 @@ const Home = () => {
         isEditing: false,
         isCompleted: false,
       });
-    },
-    [dispatch],
-  );
-
-  const handleEdit = useCallback(
-    (id: number) => {
-      dispatch(editTodo(id));
     },
     [dispatch],
   );
@@ -102,13 +104,14 @@ const Home = () => {
       return (
         <TaskItem
           item={item}
-          handleEdit={handleEdit}
           handleDelete={handleDelete}
           handleConfirm={handleConfirm}
           onChangeText={onChangeText}
           handleUpdate={handleUpdate}
           setTask={setTask}
           handleComplete={handleComplete}
+          handleSelect={handleSelect}
+          selected={selected}
         />
       );
     },
@@ -116,9 +119,10 @@ const Home = () => {
       handleConfirm,
       handleDelete,
       onChangeText,
-      handleEdit,
       handleUpdate,
       handleComplete,
+      selected,
+      handleSelect,
     ],
   );
 
@@ -155,6 +159,7 @@ const Home = () => {
           handleConfirm={handleConfirm}
           onChangeText={onChangeText}
           setTask={setTask}
+          init={true}
         />
       </Modal>
     </View>

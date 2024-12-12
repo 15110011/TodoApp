@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {memo, useEffect} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Icons} from '../utils/Icons';
 import {Colors, Radius, Size, Spacing} from '../themes/themes';
@@ -16,101 +16,138 @@ import Animated, {
 type Props = {
   item: ITask;
   setTask: (task: ITask) => void;
-  handleEdit: (id: number) => void;
   handleComplete: (id: number) => void;
   handleDelete: (id: number) => void;
   handleConfirm: (data: ITask) => void;
   onChangeText: (text: string) => void;
   handleUpdate: (data: ITask) => void;
+  handleSelect: (item: ITask) => void;
+  selected: ITask;
 };
 
 const TaskItem: React.FC<Props> = props => {
   const {
     item,
-    handleEdit,
     handleComplete,
     handleDelete,
     handleConfirm,
     onChangeText,
     handleUpdate,
     setTask,
+    selected,
+    handleSelect,
   } = props || {};
-  const {isEditing} = item;
-  const translate = useSharedValue(200);
+  const heightAnim = useSharedValue<number>(114);
+  const opacity = useSharedValue<number>(1);
 
   useEffect(() => {
-    translate.value = withTiming(0, {duration: 300});
-  });
+    if (selected?.id == item?.id && item.isEditing) {
+      heightAnim.value = 340;
+      opacity.value = 0;
+    } else {
+      heightAnim.value = 114;
+      opacity.value = 1;
+    }
+  }, [heightAnim, item?.id, selected?.id, item.isEditing, opacity]);
+
+  const handleAction = (data: ITask) => {
+    handleUpdate(data);
+    heightAnim.value = 114;
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: withTiming(heightAnim.value, {duration: 300}),
+  }));
+
+  const animatedStyle2 = useAnimatedStyle(() => ({
+    opacity: withTiming(opacity.value, {duration: 500}),
+  }));
 
   const renderPriority = (task: ITask) => {
     switch (task.priority) {
       case 3:
-        return <Text style={styles.highPriority}>Ưu tiên cao</Text>;
+        return (
+          <Animated.Text
+            style={[styles.highPriority, styles.priority, animatedStyle2]}>
+            Ưu tiên cao
+          </Animated.Text>
+        );
       case 2:
-        return <Text style={styles.medPriority}>Ưu tiên trung bình</Text>;
+        return (
+          <Animated.Text
+            style={[styles.medPriority, styles.priority, animatedStyle2]}>
+            Ưu tiên trung bình
+          </Animated.Text>
+        );
       case 1:
-        return <Text style={styles.lowPriority}>Ưu tiên thấp</Text>;
+        return (
+          <Animated.Text
+            style={[styles.lowPriority, styles.priority, animatedStyle2]}>
+            Ưu tiên thấp
+          </Animated.Text>
+        );
       default:
         return null;
     }
   };
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          translateX: -translate.value,
-        },
-      ],
-    };
-  });
-
-  if (isEditing) {
-    return (
-      <InitTask
-        task={item}
-        setTask={setTask}
-        handleDelete={handleDelete}
-        handleConfirm={handleConfirm}
-        onChangeText={onChangeText}
-        handleUpdate={handleUpdate}
-      />
-    );
-  }
-
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
-      <View style={styles.panel}>
-        <Checkbox
-          isChecked={item.isCompleted}
-          onChange={() => handleComplete(item.id)}
-        />
-        <Text
-          numberOfLines={2}
-          style={[
-            styles.title,
-            item.isCompleted && {
-              textDecorationLine: 'line-through',
-              textDecorationStyle: 'solid',
-            },
-          ]}>
-          {item.name}
-        </Text>
-        <TouchableOpacity onPress={() => handleEdit(item.id)}>
-          <Animated.View style={animatedStyle}>
-            <AppIcon
-              icon={Icons.edit}
-              size={Size.size_36}
-              color={Colors.black}
-            />
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.subPanel}>
-        {renderPriority(item)}
-        <Text>{calcRemainingTime(item.date)}</Text>
-      </View>
-    </Animated.View>
+    <TouchableOpacity
+      disabled={item.isEditing}
+      onPress={() => handleSelect(item)}>
+      <Animated.View style={[styles.container, animatedStyle]}>
+        {item?.id == selected?.id && item.isEditing ? (
+          <InitTask
+            task={item}
+            setTask={setTask}
+            handleDelete={handleDelete}
+            handleConfirm={handleConfirm}
+            onChangeText={onChangeText}
+            handleUpdate={handleAction}
+            item={item}
+          />
+        ) : (
+          <>
+            <View style={styles.panel}>
+              <View style={styles.flex}>
+                <Animated.View style={animatedStyle2}>
+                  <Checkbox
+                    isChecked={item.isCompleted}
+                    onChange={() => handleComplete(item.id)}
+                  />
+                </Animated.View>
+                <Text
+                  numberOfLines={2}
+                  style={[
+                    styles.title,
+                    item.isCompleted && {
+                      textDecorationLine: 'line-through',
+                      textDecorationStyle: 'solid',
+                    },
+                  ]}>
+                  {item.name}
+                </Text>
+              </View>
+              <TouchableOpacity
+                disabled={item.isEditing}
+                onPress={() => handleSelect(item)}>
+                <AppIcon
+                  icon={Icons.edit}
+                  size={Size.size_36}
+                  color={Colors.black}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.subPanel}>
+              {renderPriority(item)}
+              <Animated.Text style={[styles.count, animatedStyle2]}>
+                {calcRemainingTime(item.date)}
+              </Animated.Text>
+            </View>
+          </>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
   );
 };
 
@@ -119,8 +156,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: Radius.L,
     paddingHorizontal: Spacing.L + 2,
-    paddingVertical: Spacing.XXL,
+    paddingVertical: Spacing.XL,
     marginVertical: Spacing.M,
+    overflow: 'hidden',
+  },
+  flex: {
+    flex: 1,
+    flexDirection: 'row',
   },
   panel: {
     flexDirection: 'row',
@@ -129,12 +171,17 @@ const styles = StyleSheet.create({
   subPanel: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: Spacing.L,
+    paddingTop: Spacing.M,
   },
   deleteBtn: {
     flexDirection: 'row',
     alignSelf: 'flex-end',
     paddingBottom: Spacing.L,
+  },
+  priority: {
+    marginLeft: Spacing.XL - 2 + Spacing.S,
+    fontSize: Size.size_14,
+    fontWeight: '400',
   },
   highPriority: {
     color: Colors.green,
@@ -146,10 +193,11 @@ const styles = StyleSheet.create({
     color: Colors.grey,
   },
   title: {
-    flex: 1,
     color: Colors.black,
     fontWeight: '500',
+    fontSize: Size.size_16,
   },
+  count: {fontSize: Size.size_12, fontWeight: '400', lineHeight: 20},
 });
 
-export default TaskItem;
+export default memo(TaskItem);

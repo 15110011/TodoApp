@@ -30,10 +30,10 @@ const todoSlice = createSlice({
       }
     },
     editTodo: (state, action) => {
-      const todo = state.todoList.find((el: ITask) => el.id === action.payload);
-      if (todo) {
-        todo.isEditing = !todo.isEditing;
-      }
+      state.todoList = state.todoList.map((todo: ITask) => ({
+        ...todo,
+        isEditing: todo.id === action.payload ? true : false,
+      }));
     },
     updateTodo: (state, action) => {
       const data = action.payload;

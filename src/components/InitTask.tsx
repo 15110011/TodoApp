@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,8 +16,9 @@ import AppIcon from './Icon';
 import {Icons} from '../utils/Icons';
 import Animated, {
   useAnimatedStyle,
-  withSpring,
+  withTiming,
   useSharedValue,
+  withDelay,
 } from 'react-native-reanimated';
 
 type Props = {
@@ -27,20 +28,45 @@ type Props = {
   handleConfirm: (data: ITask) => void;
   handleDelete?: (id: number) => void;
   handleUpdate?: (data: ITask) => void;
+  init?: boolean;
+  item: ITask;
 };
 
 const InitTask: React.FC<Props> = props => {
-  const boucingValue = useSharedValue<number>(0);
-  const {task, handleConfirm, handleDelete, handleUpdate} = props || {};
+  const {task, handleConfirm, handleDelete, handleUpdate, init, item} =
+    props || {};
   const {isEditing} = task;
-  const [newData, setNewData] = useState({...task, date: new Date()});
+  const [newData, setNewData] = useState({...task, name: '', date: new Date()});
   const [open, setOpen] = useState<boolean>(false);
   const [focus, setFocus] = useState(false);
   const [error, setError] = useState(false);
+  const tranXAnim = useSharedValue<number>(0);
+  const tranYAnim = useSharedValue<number>(0);
+  const opacityAnim = useSharedValue<number>(1);
+  const textIputRef = useRef<typeof TextInput>(null);
+  let test = useRef(false);
+
+  const textAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: withTiming(tranXAnim.value, {duration: 600}),
+      },
+      {translateY: withTiming(tranYAnim.value, {duration: 600})},
+    ],
+    opacity: withDelay(600, withTiming(opacityAnim.value, {duration: 700})),
+  }));
 
   useEffect(() => {
-    boucingValue.value = 1;
-  }, [boucingValue, task]);
+    tranXAnim.value = -26;
+    tranYAnim.value = 35;
+    opacityAnim.value = 0;
+    if (!test?.current) {
+      setTimeout(() => {
+        setNewData({...newData, name: task.name});
+      }, 600);
+      test.current = true;
+    }
+  }, [tranXAnim, tranYAnim, opacityAnim, newData, task.name]);
 
   const handleAction = useCallback(() => {
     setFocus(false);
@@ -56,22 +82,27 @@ const InitTask: React.FC<Props> = props => {
     }
   }, [handleConfirm, handleUpdate, newData, task.isEditing]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        scale: withSpring(boucingValue.value, {
-          duration: 700,
-        }),
-      },
-    ],
-  }));
-
   return (
-    <Animated.View style={[styles.modalWrap, animatedStyle]}>
-      {isEditing ? (
+    <View style={init && styles.modalWrap}>
+      <View style={styles.panel}>
+        <View style={styles.checkbox}>
+          <View style={styles.fakeCheckbox} />
+          <Animated.Text
+            numberOfLines={2}
+            style={[
+              styles.title,
+              item.isCompleted && {
+                textDecorationLine: 'line-through',
+                textDecorationStyle: 'solid',
+              },
+              textAnimatedStyle,
+            ]}>
+            {item.name}
+          </Animated.Text>
+        </View>
         <TouchableOpacity
           onPress={() => handleDelete?.(task.id)}
-          style={styles.deleteBtn}>
+          style={[styles.deleteBtn]}>
           <AppIcon
             icon={Icons.delete}
             size={Size.size_12}
@@ -79,7 +110,7 @@ const InitTask: React.FC<Props> = props => {
           />
           <Text style={{paddingLeft: Spacing.S}}>Xoá</Text>
         </TouchableOpacity>
-      ) : null}
+      </View>
       <>
         <View
           style={[
@@ -95,7 +126,8 @@ const InitTask: React.FC<Props> = props => {
           ]}>
           {isEditing ? (
             <TextInput
-              placeholder="Tên công việc"
+              // placeholder="Tên công việc"
+              ref={textIputRef}
               value={newData.name}
               onChangeText={txt => {
                 if (error) {
@@ -109,9 +141,11 @@ const InitTask: React.FC<Props> = props => {
               onBlur={() => {
                 setFocus(false);
               }}
+              style={styles.title}
             />
           ) : (
             <TextInput
+              style={styles.title}
               placeholder="Tên công việc"
               value={newData.name}
               onChangeText={txt => {
@@ -129,7 +163,12 @@ const InitTask: React.FC<Props> = props => {
             />
           )}
         </View>
-        <View style={[styles.inputWrap, styles.iosStyle]}>
+        <View
+          style={[
+            styles.inputWrap,
+            styles.iosStyle,
+            {paddingBottom: Spacing.M},
+          ]}>
           <Text style={styles.title}>Thời hạn</Text>
           <TouchableOpacity
             hitSlop={{top: 10, bottom: 10, left: 20, right: 10}}
@@ -176,7 +215,7 @@ const InitTask: React.FC<Props> = props => {
           setOpen(false);
         }}
       />
-    </Animated.View>
+    </View>
   );
 };
 
@@ -190,17 +229,17 @@ const styles = StyleSheet.create({
   inputWrap: {
     borderBottomWidth: 1,
     borderColor: Colors.borderGrey,
-    paddingBottom: Spacing.S,
-    marginBottom: Spacing.XL,
+    // paddingBottom: Spacing.XS,
+    marginBottom: Spacing.XL - 2,
   },
   title: {
+    color: Colors.black,
     fontWeight: '500',
     fontSize: Size.size_16,
   },
   confirmBtn: {
     alignSelf: 'center',
     backgroundColor: Colors.green,
-    marginTop: Spacing.S,
     paddingVertical: Spacing.S,
     paddingHorizontal: Spacing.XL,
     borderRadius: Radius.XL,
@@ -211,11 +250,24 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     flexDirection: 'row',
-    alignSelf: 'flex-end',
   },
   iosStyle: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  panel: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: Spacing.S,
+  },
+  checkbox: {flexDirection: 'row', alignItems: 'center'},
+  fakeCheckbox: {
+    width: 22,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.S,
+    borderRadius: Radius.XS + 1,
   },
 });
 

@@ -16,26 +16,26 @@ const Checkbox: React.FC<CheckboxProps> = ({isChecked = false, onChange}) => {
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={handlePress}>
-      <View style={[styles.checkbox, checked && styles.checked]}>
+    <View style={styles.container}>
+      <TouchableOpacity
+        onPress={handlePress}
+        style={[styles.checkbox, checked && styles.checked]}>
         {checked && <View style={styles.checkmark} />}
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: Spacing.S,
   },
   checkbox: {
     width: 22,
     height: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: Spacing.S,
     borderRadius: Radius.XS + 1,
     backgroundColor: Colors.lightGrey,
   },
