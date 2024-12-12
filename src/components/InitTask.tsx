@@ -29,12 +29,10 @@ type Props = {
   handleDelete?: (id: number) => void;
   handleUpdate?: (data: ITask) => void;
   init?: boolean;
-  item: ITask;
 };
 
 const InitTask: React.FC<Props> = props => {
-  const {task, handleConfirm, handleDelete, handleUpdate, init, item} =
-    props || {};
+  const {task, handleConfirm, handleDelete, handleUpdate, init} = props || {};
   const {isEditing} = task;
   const [newData, setNewData] = useState({...task, name: '', date: new Date()});
   const [open, setOpen] = useState<boolean>(false);
@@ -43,8 +41,7 @@ const InitTask: React.FC<Props> = props => {
   const tranXAnim = useSharedValue<number>(0);
   const tranYAnim = useSharedValue<number>(0);
   const opacityAnim = useSharedValue<number>(1);
-  const textIputRef = useRef<typeof TextInput>(null);
-  let test = useRef(false);
+  let isEdited = useRef(false);
 
   const textAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -60,11 +57,11 @@ const InitTask: React.FC<Props> = props => {
     tranXAnim.value = -26;
     tranYAnim.value = 35;
     opacityAnim.value = 0;
-    if (!test?.current) {
+    if (!isEdited?.current) {
       setTimeout(() => {
         setNewData({...newData, name: task.name});
       }, 600);
-      test.current = true;
+      isEdited.current = true;
     }
   }, [tranXAnim, tranYAnim, opacityAnim, newData, task.name]);
 
@@ -91,13 +88,13 @@ const InitTask: React.FC<Props> = props => {
             numberOfLines={2}
             style={[
               styles.title,
-              item.isCompleted && {
+              task.isCompleted && {
                 textDecorationLine: 'line-through',
                 textDecorationStyle: 'solid',
               },
               textAnimatedStyle,
             ]}>
-            {item.name}
+            {task.name}
           </Animated.Text>
         </View>
         <TouchableOpacity
@@ -126,8 +123,6 @@ const InitTask: React.FC<Props> = props => {
           ]}>
           {isEditing ? (
             <TextInput
-              // placeholder="Tên công việc"
-              ref={textIputRef}
               value={newData.name}
               onChangeText={txt => {
                 if (error) {
@@ -145,7 +140,7 @@ const InitTask: React.FC<Props> = props => {
             />
           ) : (
             <TextInput
-              style={styles.title}
+              style={[styles.title, {flex: 1}]}
               placeholder="Tên công việc"
               value={newData.name}
               onChangeText={txt => {
@@ -229,7 +224,6 @@ const styles = StyleSheet.create({
   inputWrap: {
     borderBottomWidth: 1,
     borderColor: Colors.borderGrey,
-    // paddingBottom: Spacing.XS,
     marginBottom: Spacing.XL - 2,
   },
   title: {

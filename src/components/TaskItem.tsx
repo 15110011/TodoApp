@@ -104,7 +104,6 @@ const TaskItem: React.FC<Props> = props => {
             handleConfirm={handleConfirm}
             onChangeText={onChangeText}
             handleUpdate={handleAction}
-            item={item}
           />
         ) : (
           <>
