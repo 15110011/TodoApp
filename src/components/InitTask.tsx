@@ -196,7 +196,7 @@ const InitTask: React.FC<Props> = props => {
           />
         </View>
         <TouchableOpacity style={styles.confirmBtn} onPress={handleAction}>
-          <Text>Xong</Text>
+          <Text style={styles.confirmText}>Xong</Text>
         </TouchableOpacity>
       </>
       <DatePicker
@@ -264,6 +264,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: Spacing.S,
     borderRadius: Radius.XS + 1,
+  },
+  confirmText: {
+    fontSize: Size.size_12,
+    color: Colors.white,
+    fontWeight: '500',
   },
 });
 
